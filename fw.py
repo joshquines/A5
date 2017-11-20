@@ -4,8 +4,19 @@ import os
 # Array to store rules as dictionaries
 RULES = []
 
-def validRule(rule, direction, action, ip, ports, established, count):
-    valid = True
+def validPacket(packet):
+    validP = True
+    if len(packet) != 4:
+        print("Error: Malformed packet detected - Incorrect Fields")
+        print("Valid Packet: <direction> <ip> <port> [flag]")
+        return False
+    
+
+    
+def handlePacket(packet):
+
+def validRule(rule, count):
+    validR = True
 
     # minimum fields is 4, maximum fields is 5
     if len(rule) < 4 or len(rule) > 5:
@@ -13,17 +24,30 @@ def validRule(rule, direction, action, ip, ports, established, count):
         print("Valid Rule: <direction> <action> <ip> <port> [flag]")
         return False
 
+    #split contents
+    direction = rule[0]
+    action = rule[1]
+    ip = rule[2]
+    port = rule[3]
+    ports = port.split(",")
+
+    # check established (if ports is the last field established is false)
+    if port == rule[-1]:
+        established = False
+    else:
+        established = True
+
     # check valid direction
     if direction not in ("in", "out"):
         print("Error: Malformed rule detected on line " + count + " - Invalid Direction")
         print("Allowed values for <direction>: \"in\" and \"out\" ")
-        valid = False
+        validR = False
 
     # check valid action
     if action not in ("accept", "drop", "reject"):
         print("Error: Malformed rule detected on line " + count + " - Invalid Action")
         print("Allowed values for <action>: \"accept\", \"drop\", and \"reject\" ")
-        valid = False
+        validR = False
     
     # check valid IP notation
     if ip == "*":
@@ -33,7 +57,7 @@ def validRule(rule, direction, action, ip, ports, established, count):
         cidr = octets[3].split("/")
         if len(octets) != 4 or cidr != 2:
             print("Error: Malformed rule detected on line " + count + " - IP must be in CIDR notation: a.b.c.d/xx")
-            valid = False
+            validR = False
     
     # check valid ports
     for p in ports:
@@ -42,15 +66,15 @@ def validRule(rule, direction, action, ip, ports, established, count):
         else:
             if p not in range(0, 65535):
                 print("Error: Malformed rule detected on line " + count + " - A port is not in range (0-65535)")
-                valid = False
+                validR = False
 
     # check if [flag] is established
     if established == True:
         if rule[-1] != "established":
             print("Error: Malformed rule detected on line " + count + " - Allowed value for [flag]: \"established\"")
-            valid = False
+            validR = False
             
-    return valid
+    return validR
 
 
 def setRules(filename):
@@ -65,33 +89,32 @@ def setRules(filename):
                 for line in rfile:
                     count += 1
                     lineContent = line.split()
-
-                    #split contents
-                    direction = lineContent[0]
-                    action = lineContent[1]
-                    ip = lineContent[2]
-                    port = lineContent[3]
-                    ports = port.split(",")
-
-                    # check established (if ports is the last field established is false)
-                    if port == lineContent[-1]:
-                        established = False
-                    else:
-                        established = True
-
                     # if the rule is valid
-                    if validRule(lineContent, direction, action, ip, ports, established, count):
+                    if validRule(lineContent, count):
                         # turn it into a dictionary
+
+                        #split contents
+                        direction = rule[0]
+                        action = rule[1]
+                        ip = rule[2]
+                        port = rule[3]
+                        ports = port.split(",")
+
+                        # check established (if ports is the last field established is false)
+                        if port == rule[-1]:
+                            established = False
+                        else:
+                            established = True
+
                         rule = { 'direction': direction,
                                  'action': action,
                                  'ip': ip
-                                 'port': port
+                                 'ports': ports
                                  'established': established
                                  'ruleNum': count
                         }
 
                         # add it to the list of rules
-                        global RULES
                         RULES.append(rule)
                     else:
                         success = False
@@ -114,7 +137,10 @@ if __name__ == "__main__":
             sys.exit()
 
         for line in sys.stdin:
+            # validate packet
             
+            # check with rules list
+
         
 
 
