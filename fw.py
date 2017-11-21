@@ -22,14 +22,36 @@ def handlePacket(packet):
 
     # Compare against rules here
     for rules in RULES:
+
         ruleNum = rules.get('ruleNum')
-        action = rules.get('action')
-                          rule = { 'direction': direction,
-                                 'action': action,
-                                 'ip': ip
-                                 'ports': ports
-                                 'established': established
-                                 'ruleNum': count      
+        ruleDirection = rules.get('direction') #in/out
+        ruleAction = rules.get('action') #accept/reject
+        ruleIp = rules.get('ip')
+        rulePort = rules.get('ports')
+        ruleEstablished = rules.get('established') #bool
+
+        # Reject Check
+        if ruleAction == 'reject':
+            if direction == ruleDirection:
+                # Check for ip *
+                if ruleIp == '*': # Reject all connections
+                    rejectFlag = True
+                elif rulePort == '*': # Only possible to reach here if ruleIp != *
+                    rejectFlag = True
+                else:
+                    # Check if 
+
+
+
+            # Check reject all
+
+
+            # Check to reject
+            
+
+
+
+
 
 
 def validRule(rule, count):
