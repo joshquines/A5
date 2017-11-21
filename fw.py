@@ -4,12 +4,15 @@ import os
 # Array to store rules as dictionaries
 RULES = []
 
+def compareIP(packetIP, ruleIP):
+
 def validPacket(packet):
     validP = True
     packetContent = packet.split()
+    # Each packet will have exactly 4 fields
     if len(packetContent) != 4:
         print("Error: Malformed packet detected - Incorrect Fields")
-        print("Valid Packet: <direction> <ip> <port> [flag]")
+        print("Valid Packet: <direction> <ip> <port> <flag>")
         return False
 
     pDirection = packetContent[0]
@@ -52,8 +55,8 @@ def handlePacket(packet):
         
         if rule['ip'] == ["*"]:
             pass
-        #elif not compareIP(packet['ip'], rule['ip']):
-        #    canProcess = False
+        elif not compareIP(packet['ip'], rule['ip']):
+            canProcess = False
         
         if rule['ports'] == ["*"]:
             pass
@@ -97,7 +100,7 @@ def validRule(rule, count):
     port = rule[3]
     ports = port.split(",")
 
-    # check established (if ports is the last field established is false)
+    # check established (if port is the last field established is false)
     if port == rule[-1]:
         established = False
     else:
@@ -134,7 +137,7 @@ def validRule(rule, count):
                 print("Error: Malformed rule detected on line " + count + " - Port is not in range (0-65535)")
                 validR = False
 
-    # check if [flag] is established
+    # check if [flag] is actually 'established'
     if established == True:
         if rule[-1] != "established":
             print("Error: Malformed rule detected on line " + count + " - Allowed value for [flag]: \"established\"")
@@ -183,9 +186,10 @@ def setRules(filename):
                         # add it to the list of rules
                         RULES.append(rule)
                     else:
+                        # if an invalid rule is found, report errors and stop the program
                         success = False
+                        break
             rfile.close()
-            return
         except:
             print("Error: Could not open " + filename)
             return False
@@ -198,6 +202,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         filename = sys.argv[1]
 
+        # process configuration file
         if not setRules(filename):
             print("Error: Unable to process rules from configuration file")
             sys.exit()
