@@ -6,62 +6,77 @@ RULES = []
 
 def validPacket(packet):
     validP = True
-    if len(packet) != 4:
+    packetContent = packet.split()
+    if len(packetContent) != 4:
         print("Error: Malformed packet detected - Incorrect Fields")
         print("Valid Packet: <direction> <ip> <port> [flag]")
         return False
+
+    pDirection = packetContent[0]
+    pIP = packetContent[1]
+    pPort = packetContent[2]
+    pFlag = packetContent[3]
+
+    if pDirection not in ("in", "out"):
+        print("Error: Malformed packet detected - Invalid Direction")
+        print("Allowed values for <direction>: \"in\" and \"out\" ")
+        validP = False
+
+    if pIP.split(".") != 4:
+        print("Error: Malformed packet detected - IP must be in notation: a.b.c.d")
+        validP = False
+    
+    if pPort not in range(0, 65535):
+        print("Error: Malformed packet detected - Port is not in range (0-65535)")
+        validP = False
+    
+    if pFlag not in (0,1):
+        print("Error: Malformed packet detected - Invalid flag value")
+        print("<flag> specifies whether the packet is part of a new (0) session or established (1) session.")
+        validP = False
+
     return validP
     
-
     
 def handlePacket(packet):
-    direction = packet.split()[0]
-    ip = packet.split()[1]
-    port = packet.split()[2]
-    flag = packet.split()[3]
 
-
+    # can the packet to processed
+    canProcess = True
+    # there is currently no rule that can apply to the packet
+    noRule = True
     # Compare against rules here
-    for rules in RULES:
+    for rule in RULES:
+        
+        if packet['direction'] != rule['direction']:
+            canProcess = False
+        
+        if not compareIP(packet['ip'], rule['ip']):
+            canProcess = False
+        
+        if rule['ports'] == ["*"]:
+            pass
+        elif packet['port'] not in rule['ports']:
+            canProcess = False
+        
+        # can process if either both are the same or rule['established] == 0
+        if packet['flag'] != rule['flag'] AND rule['flag'] != 0:
+            canProcess = False
+            
+        if canProcess == True:
+            output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + packet['flag']
+            print(output)
 
-        ruleNum = rules.get('ruleNum')
-        ruleDirection = rules.get('direction') #in/out
-        ruleAction = rules.get('action') #accept/reject
-        ruleIp = rules.get('ip')
-        rulePort = rules.get('ports')
-        ruleEstablished = rules.get('established') #bool
-
-        # Reject Check
-        if ruleAction == 'reject':
-            if direction == ruleDirection: # Check if same direction
-                if ip == ruleIp or ruleIp == '*': # Consider reject if ruleIP is equal or *
-                    if port != rulePort and rulePort != '*': # confirmation. Set to accept if this
-                        rejectFlag = False
-                    # Now check optional established
-                    if ruleEstablished == 1 and established == 0:
-                        rejectFlag = True 
-                    else:
-                        rejectFlag = True
-        elif ruleAction == 'accept':
-            if direction == ruleDirection: # Check if same direction
-                if ip == ruleIp or ruleIp == '*': # Consider reject if ruleIP is equal or *
-                    if port != rulePort and rulePort != '*': # confirmation. Set to accept if this
-                        acceptFlag = True
-                    # Now check optional established
-                    if ruleEstablished == 1 and established == 0:
-                        acceptFlag = False 
-                    else:
-                        acceptFlag = True
-
-        if rejectFlag == True or acceptFlag == False:
-            print("Reject (" + str(ruleNum) + ") " direction + " " + str(ip) + str(port) + str(established))
+            noRule = False
+            break
         else:
-            print("Accept (" + str(ruleNum) + ") " direction + " " + str(ip) + str(port) + str(established))
+            # reset canProcess flag for next rule
+            canProcess = True
 
+    if noRule:
+        output = "drop() " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + packet['flag']
+        print(output)
 
-
-
-
+    return
 
 def validRule(rule, count):
     validR = True
@@ -113,7 +128,7 @@ def validRule(rule, count):
             pass
         else:
             if p not in range(0, 65535):
-                print("Error: Malformed rule detected on line " + count + " - A port is not in range (0-65535)")
+                print("Error: Malformed rule detected on line " + count + " - Port is not in range (0-65535)")
                 validR = False
 
     # check if [flag] is established
@@ -142,10 +157,10 @@ def setRules(filename):
                         # turn it into a dictionary
 
                         #split contents
-                        direction = rule[0]
-                        action = rule[1]
-                        ip = rule[2]
-                        port = rule[3]
+                        direction = lineContent[0]
+                        action = lineContent[1]
+                        ip = lineContent[2]
+                        port = lineContent[3]
                         ports = port.split(",")
 
                         # check established (if ports is the last field established is false)
@@ -158,7 +173,7 @@ def setRules(filename):
                                  'action': action,
                                  'ip': ip
                                  'ports': ports
-                                 'established': established
+                                 'flag': established
                                  'ruleNum': count
                         }
 
@@ -189,10 +204,25 @@ if __name__ == "__main__":
             validator = validPacket(line)
 
             if validator == True:
+                # put packet into a dictionary
+                pContent = line.split()
+
+                pDirection = pContent[0]
+                pIP = pContent[1]
+                pPort = pContent[2]
+                pFlag = pContent[3]
+
+                packet = { 'direction': pDirection,
+                           'ip': pIP,
+                           'port': pPort,
+                           'flag': pFlag
+                }
+
                 # check with rules list
-                handlePacket(line)
+                handlePacket(packet)
             else:
-                print("Invalid packet detected")
+                print("Error: Packet could not be processed")
+                sys.exit()
 
     else:
         print("Error: Incorrect Number of Arguments")
