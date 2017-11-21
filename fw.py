@@ -42,8 +42,18 @@ def handlePacket(packet):
                         rejectFlag = True 
                     else:
                         rejectFlag = True
+        elif ruleAction == 'accept':
+            if direction == ruleDirection: # Check if same direction
+                if ip == ruleIp or ruleIp == '*': # Consider reject if ruleIP is equal or *
+                    if port != rulePort and rulePort != '*': # confirmation. Set to accept if this
+                        acceptFlag = True
+                    # Now check optional established
+                    if ruleEstablished == 1 and established == 0:
+                        acceptFlag = False 
+                    else:
+                        acceptFlag = True
 
-        if rejectFlag == True:
+        if rejectFlag == True or acceptFlag == False:
             print("Reject (" + str(ruleNum) + ") " direction + " " + str(ip) + str(port) + str(established))
         else:
             print("Accept (" + str(ruleNum) + ") " direction + " " + str(ip) + str(port) + str(established))
@@ -184,15 +194,7 @@ if __name__ == "__main__":
             else:
                 print("Invalid packet detected")
 
-            
-
-
-        
-
-
-
-
-
     else:
         print("Error: Incorrect Number of Arguments")
         print("Usage: fw.py <configuration file>")
+        sys.exit()
