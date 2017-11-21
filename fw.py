@@ -52,8 +52,8 @@ def handlePacket(packet):
         
         if rule['ip'] == ["*"]:
             pass
-        elif not compareIP(packet['ip'], rule['ip']):
-            canProcess = False
+        #elif not compareIP(packet['ip'], rule['ip']):
+        #    canProcess = False
         
         if rule['ports'] == ["*"]:
             pass
@@ -61,7 +61,7 @@ def handlePacket(packet):
             canProcess = False
         
         # can process if either both are the same or rule['established] == 0
-        if packet['flag'] != rule['flag'] AND rule['flag'] != 0:
+        if packet['flag'] != rule['flag'] and rule['flag'] != 0:
             canProcess = False
             
         if canProcess == True:
@@ -174,9 +174,9 @@ def setRules(filename):
 
                         rule = { 'direction': direction,
                                  'action': action,
-                                 'ip': ip
-                                 'ports': ports
-                                 'flag': established
+                                 'ip': ip,
+                                 'ports': ports,
+                                 'flag': established,
                                  'ruleNum': count
                         }
 
