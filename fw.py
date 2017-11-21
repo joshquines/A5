@@ -20,6 +20,7 @@ def handlePacket(packet):
     port = packet.split()[2]
     flag = packet.split()[3]
 
+
     # Compare against rules here
     for rules in RULES:
 
@@ -32,22 +33,20 @@ def handlePacket(packet):
 
         # Reject Check
         if ruleAction == 'reject':
-            if direction == ruleDirection:
-                # Check for ip *
-                if ruleIp == '*': # Reject all connections
-                    rejectFlag = True
-                elif rulePort == '*': # Only possible to reach here if ruleIp != *
-                    rejectFlag = True
-                else:
-                    # Check if 
+            if direction == ruleDirection: # Check if same direction
+                if ip == ruleIp or ruleIp == '*': # Consider reject if ruleIP is equal or *
+                    if port != rulePort and rulePort != '*': # confirmation. Set to accept if this
+                        rejectFlag = False
+                    # Now check optional established
+                    if ruleEstablished == 1 and established == 0:
+                        rejectFlag = True 
+                    else:
+                        rejectFlag = True
 
-
-
-            # Check reject all
-
-
-            # Check to reject
-            
+        if rejectFlag == True:
+            print("Reject (" + str(ruleNum) + ") " direction + " " + str(ip) + str(port) + str(established))
+        else:
+            print("Accept (" + str(ruleNum) + ") " direction + " " + str(ip) + str(port) + str(established))
 
 
 
@@ -141,9 +140,9 @@ def setRules(filename):
 
                         # check established (if ports is the last field established is false)
                         if port == rule[-1]:
-                            established = False
+                            established = 0
                         else:
-                            established = True
+                            established = 1
 
                         rule = { 'direction': direction,
                                  'action': action,
