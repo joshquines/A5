@@ -10,10 +10,27 @@ def validPacket(packet):
         print("Error: Malformed packet detected - Incorrect Fields")
         print("Valid Packet: <direction> <ip> <port> [flag]")
         return False
+    return validP
     
 
     
 def handlePacket(packet):
+    direction = packet.split()[0]
+    ip = packet.split()[1]
+    port = packet.split()[2]
+    flag = packet.split()[3]
+
+    # Compare against rules here
+    for rules in RULES:
+        ruleNum = rules.get('ruleNum')
+        action = rules.get('action')
+                          rule = { 'direction': direction,
+                                 'action': action,
+                                 'ip': ip
+                                 'ports': ports
+                                 'established': established
+                                 'ruleNum': count      
+
 
 def validRule(rule, count):
     validR = True
@@ -138,8 +155,16 @@ if __name__ == "__main__":
 
         for line in sys.stdin:
             # validate packet
+            validator = validPacket(line)
+
+            if validator == True:
+                # check with rules list
+                handlePacket(line)
+            else:
+                print("Invalid packet detected")
+
             
-            # check with rules list
+
 
         
 
