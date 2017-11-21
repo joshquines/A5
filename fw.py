@@ -5,6 +5,36 @@ import os
 RULES = []
 
 def compareIP(packetIP, ruleIP):
+    # Convert to octet
+    pktIP = []
+    ruleIP = []
+
+    # Get ranges
+    pIP = packetIP.split(".")
+    rIP = ruleIP.split(".")    
+    pRange = pIP[3].split("/")
+    rRange = rIP[3].split("/")
+
+    # Range to Octet
+    if pRange[0] != pRange[-1]:
+        pMask = None # Still gotta do a mask thing here
+    else:
+        pMask = [255,255,255,0]
+    pkt = pktIP, pMask
+
+    if rRange[0] != rRange[-1]:
+        rMask = None # Still gotta do a mask thing here
+    else:
+        rMask = [255,255,255,0]    
+    rule = ruleIP, rMask 
+
+    # Compare ip,mask 
+    if pkt == rule:
+        return True
+    else:
+        return False
+
+
 
 def validPacket(packet):
     validP = True
