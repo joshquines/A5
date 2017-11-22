@@ -103,12 +103,12 @@ def handlePacket(packet):
         if packet['direction'] != rule['direction']:
             canProcess = False
 
-        if rule['ip'] == ["*"]:
+        if rule['ip'] == "*":
             pass
         elif not compareIP(packet['ip'], rule['ip']):
             canProcess = False
         
-        if rule['ports'] == ["*"]:
+        if rule['ports'] == "*":
             pass
         elif packet['port'] not in rule['ports']:
             canProcess = False
@@ -118,7 +118,7 @@ def handlePacket(packet):
             canProcess = False
             
         if canProcess == True:
-            output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + packet['flag']
+            output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
             print(output)
             # A rule has been matched
             noRule = False
@@ -129,7 +129,7 @@ def handlePacket(packet):
 
     # If no rule can be found default action is drop()
     if noRule:
-        output = "drop() " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + packet['flag']
+        output = "drop() " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
         print(output)
 
     return
