@@ -10,22 +10,22 @@ def compareIP(packetIP, ruleIP):
     ruleIP = []
 
     # Get ranges
-    pIP = packetIP.split(".")
-    rIP = ruleIP.split(".")    
-    pRange = pIP[3].split("/")
-    rRange = rIP[3].split("/")
+    #pIP = packetIP.split(".")
+    #rIP = ruleIP.split(".")    
+    pRange = packetIP.split(".")[3]
+    rRange = ruleIP.split(".")[3] 
 
     # Range to Octet
     if pRange[0] != pRange[-1]:
-        pMask = None # Still gotta do a mask thing here
+        pMask = binaryMask(pRange[0])
     else:
-        pMask = [255,255,255,0]
+        pMask = [255,255,255,255]
     pkt = pktIP, pMask
 
     if rRange[0] != rRange[-1]:
-        rMask = None # Still gotta do a mask thing here
+        rMask = binaryMask(rRange[0])
     else:
-        rMask = [255,255,255,0]    
+        rMask = [255,255,255,255]    
     rule = ruleIP, rMask 
 
     # Compare ip,mask 
@@ -33,6 +33,25 @@ def compareIP(packetIP, ruleIP):
         return True
     else:
         return False
+
+def binaryMask(mask):
+
+    octetMask = []
+
+    # Get Octets
+    while mask > 0:
+        mask = mask - 8
+        if mask <= 0:
+            finalOctet = abs(mask)
+            lastMask = 0
+            while finalOctet >= 0:
+                lastMask = lastMask + math.pow(2, 8 - finalOctet)
+                finalOctet = finalOctet - 1
+            octetMask.append(lastMask)
+        else:
+            # 255
+            octetMask.append(255)
+    return octetMask
 
 
 
