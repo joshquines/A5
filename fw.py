@@ -1,6 +1,7 @@
 import sys
 import os
 import traceback
+import math
 
 # Array to store rules as dictionaries
 RULES = []
@@ -40,6 +41,7 @@ def binaryMask(mask):
     octetMask = []
 
     # Get Octets
+    mask = int(mask)
     while mask > 0:
         mask = mask - 8
         if mask <= 0:
