@@ -1,5 +1,6 @@
 import sys
 import os
+import traceback
 
 # Array to store rules as dictionaries
 RULES = []
@@ -7,7 +8,7 @@ RULES = []
 def compareIP(packetIP, ruleIP):
     # Convert to octet
     pktIP = []
-    ruleIP = []
+    #ruleIP = []
 
     # Get ranges
     #pIP = packetIP.split(".")
@@ -64,17 +65,17 @@ def validPacket(packet):
         print("Valid Packet: <direction> <ip> <port> <flag>")
         return False
 
-    pDirection = packetContent[0]
-    pIP = packetContent[1]
-    pPort = packetContent[2]
-    pFlag = packetContent[3]
+    pDirection = str(packetContent[0])
+    pIP = str(packetContent[1])
+    pPort = int(packetContent[2])
+    pFlag = int(packetContent[3])
 
     if pDirection not in ("in", "out"):
         print("Error: Malformed packet detected - Invalid Direction")
         print("Allowed values for <direction>: \"in\" and \"out\" ")
         validP = False
 
-    if pIP.split(".") != 4:
+    if len(pIP.split(".")) != 4:
         print("Error: Malformed packet detected - IP must be in notation: a.b.c.d")
         validP = False
     
@@ -101,7 +102,7 @@ def handlePacket(packet):
         
         if packet['direction'] != rule['direction']:
             canProcess = False
-        
+
         if rule['ip'] == ["*"]:
             pass
         elif not compareIP(packet['ip'], rule['ip']):
@@ -138,15 +139,15 @@ def validRule(rule, count):
 
     # minimum fields is 4, maximum fields is 5
     if len(rule) < 4 or len(rule) > 5:
-        print("Error: Malformed rule detected on line " + count + " - Incorrect Fields")
+        print("Error: Malformed rule detected on line " + str(count) + " - Incorrect Fields")
         print("Valid Rule: <direction> <action> <ip> <port> [flag]")
         return False
 
     #split contents
-    direction = rule[0]
-    action = rule[1]
-    ip = rule[2]
-    port = rule[3]
+    direction = str(rule[0])
+    action = str(rule[1])
+    ip = str(rule[2])
+    port = str(rule[3])
     ports = port.split(",")
 
     # check established (if port is the last field established is false)
@@ -157,13 +158,13 @@ def validRule(rule, count):
 
     # check valid direction
     if direction not in ("in", "out"):
-        print("Error: Malformed rule detected on line " + count + " - Invalid Direction")
+        print("Error: Malformed rule detected on line " + str(count) + " - Invalid Direction")
         print("Allowed values for <direction>: \"in\" and \"out\" ")
         validR = False
 
     # check valid action
     if action not in ("accept", "drop", "reject"):
-        print("Error: Malformed rule detected on line " + count + " - Invalid Action")
+        print("Error: Malformed rule detected on line " + str(count) + " - Invalid Action")
         print("Allowed values for <action>: \"accept\", \"drop\", and \"reject\" ")
         validR = False
     
@@ -173,8 +174,8 @@ def validRule(rule, count):
     else:
         octets = ip.split(".")
         cidr = octets[3].split("/")
-        if len(octets) != 4 or cidr != 2:
-            print("Error: Malformed rule detected on line " + count + " - IP must be in CIDR notation: a.b.c.d/xx")
+        if len(octets) != 4 or len(cidr) != 2:
+            print("Error: Malformed rule detected on line " + str(count) + " - IP must be in CIDR notation: a.b.c.d/xx")
             validR = False
     
     # check valid ports
@@ -182,14 +183,15 @@ def validRule(rule, count):
         if p == "*":
             pass
         else:
+            p = int(p)
             if p not in range(0, 65535):
-                print("Error: Malformed rule detected on line " + count + " - Port is not in range (0-65535)")
+                print("Error: Malformed rule detected on line " + str(count) + " - Port is not in range (0-65535)")
                 validR = False
 
     # check if [flag] is actually 'established'
     if established == True:
         if rule[-1] != "established":
-            print("Error: Malformed rule detected on line " + count + " - Allowed value for [flag]: \"established\"")
+            print("Error: Malformed rule detected on line " + str(count) + " - Allowed value for [flag]: \"established\"")
             validR = False
             
     return validR
@@ -212,14 +214,14 @@ def setRules(filename):
                         # turn it into a dictionary
 
                         #split contents
-                        direction = lineContent[0]
-                        action = lineContent[1]
-                        ip = lineContent[2]
-                        port = lineContent[3]
+                        direction = str(lineContent[0])
+                        action = str(lineContent[1])
+                        ip = str(lineContent[2])
+                        port = str(lineContent[3])
                         ports = port.split(",")
 
                         # check established (if ports is the last field established is false)
-                        if port == rule[-1]:
+                        if port == lineContent[-1]:
                             established = 0
                         else:
                             established = 1
@@ -240,6 +242,8 @@ def setRules(filename):
                         break
             rfile.close()
         except:
+            tb = traceback.format_exc()
+            print (tb)
             print("Error: Could not open " + filename)
             return False
     
@@ -264,10 +268,10 @@ if __name__ == "__main__":
                 # put packet into a dictionary
                 pContent = line.split()
 
-                pDirection = pContent[0]
-                pIP = pContent[1]
-                pPort = pContent[2]
-                pFlag = pContent[3]
+                pDirection = str(pContent[0])
+                pIP = str(pContent[1])
+                pPort = str(pContent[2])
+                pFlag = int(pContent[3])
 
                 packet = { 'direction': pDirection,
                            'ip': pIP,
