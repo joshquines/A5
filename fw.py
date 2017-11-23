@@ -6,42 +6,152 @@ import math
 # Array to store rules as dictionaries
 RULES = []
 
+def compareIPold(packetIP, ruleIP, num):
+    #print("ENTERED COMPARE IP " + str(num))
+    # Convert to octet
+    pktIP = []
+    #ruleIP = []
+
+    # Get ranges
+    #pIP = packetIP.split(".")
+    #rIP = ruleIP.split(".")    
+    pRange = packetIP.split(".")[3]
+    rRange = ruleIP.split(".")[3] 
+    pRange = pRange.split("/")[0]
+    rRange = rRange.split("/")[0] 
+
+    # Range to Octet
+    if pRange[0] != pRange[-1]:
+        pMask = binaryMask(pRange[0])
+    else:
+        pMask = [255,255,255,255]
+    pktIP = packetIP.split("/")[0]
+    pkt = pktIP, pMask
+
+    if rRange[0] != rRange[-1]:
+        rMask = binaryMask(rRange[0])
+    else:
+        rMask = [255,255,255,255]   
+    ruleIP = ruleIP.split("/")[0] 
+    rule = ruleIP, rMask 
+
+
+    # Compare ip,mask 
+    if pkt == rule:
+        #print("TRUE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
+        return True
+    else:
+        #print("FALSE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
+        return False
+
+
+def ipMask(ipAddress):
+
+    # If / is in ipAddress, it's a rule
+    if "/" in ipAddress:
+        # Get octets
+        ipFinal = []
+        ip = ipAddress.split("/")[0]
+        ip = ip.split(".")
+        ipRange = ipAddress.split(".")[3].split("/")
+
+        for octets in ip:
+            ipFinal.append(octets) 
+
+        # Get range octets
+        if ipRange[0] != ipRange[1]:
+            ipMask = toOctet(ipRange[1])
+        else:
+            # Full range
+            ipMask = [255,255,255,255]
+        return [ipFinal, ipMask]
+    else:
+        # Return as a list
+        ipFinal = []
+        ip = ipAddress.split(".")
+        for octets in ip:
+            ipFinal.append(octets)
+        return ipFinal
+
+# Get the ruleMask
+def toOctet(range):
+    ruleMask = []
+    ipRange = int(range)
+
+    # Get octets from range
+    while ipRange > 0:
+        # Get remainder
+        if ipRange < 0:
+            remainder = abs(ipRange)
+            finalOctet = 0
+            while remainder >= 0:
+                finalOctet = finalOctet + math.pow(2, 8 - remainder)
+                remainder = remainder - 1
+            ruleMask.append(finalOctet)
+        else:
+            # Full
+            ruleMask.append(255)
+            ipRange = ipRange - 8
+
+    # If got less than 4 octets, append 0s
+    if len(ruleMask) < 4:
+        while len(ruleMask) < 4:
+            ruleMask.append(0)
+    return ruleMask
+
+
 def compareIP(rIP, pIP):
-    """
-    ruleIP = toBinary(rIP)
-    packetIP = toBinary(pIP)
-    if ruleIP == packetIP:
+    
+    # Get IPs and Masks
+
+    rules = ipMask(rIP)
+    packets = ipMask(pIP)
+    ruleIP = rules[0]
+    ruleMask = rules[1]
+    packetIP = packets
+    #print("RULE IP: " + str(ruleIP))
+    #print("PCKT IP: " + str(packetIP))
+    #print("MASK: " + str(ruleMask))
+
+    # Convert to Binary to AND
+    binRIP = []
+    for x in ruleIP:
+        binRIP.append(format(int(x), '08b'))
+    
+    binPIP = []
+    for x in packetIP:
+        binPIP.append(format(int(x), '08b'))
+   
+    binMask = []
+    for x in ruleMask:
+        binMask.append(format(int(x), '08b'))
+
+    # Compare with lists
+    #checkPacket = []
+    #checkRules = []
+    #print(binRIP)
+    binRIP = ''.join(binRIP)
+    binPIP = ''.join(binPIP)
+    binMask = ''.join(binMask)
+
+    checkPacket = []
+    checkRules = []
+    #print(binRIP)
+    #print(binPIP)
+    #print(binMask)
+
+    # AND the packetIP with the ruleMask, ruleIP with ruleMask
+    for i in range(0, len(binPIP) - 1):
+        checkPacket.append(int(binPIP[i]) & int(binMask[i]))
+        checkRules.append(int(binRIP[i]) & int(binMask[i]))
+
+    if checkPacket == checkRules:
         return True
     else:
         return False
-    """
-
-    # CURRENTLY TESTING THIS SHIT IN PYTHON LIVE
-    ip = '136.159.255.0'
-    octets = ip.split(".")
-    fuck = []
-    ruleFuck = []
-    for x in octets:
-        print(x)
-        xp = bin(int(x)+256)[3:] 
-        fuck.append(xp)
-        
-    ruleIP = '136.159.5.5/16'
-    ruleOctets = ruleIP.split("/")[0]
-    ipRange = ruleIP.split("/")[1]
-    ruleOctets = ruleOctets.split(".")
-
-    for x in ruleOctets:
-        print(x)
-        xp = bin(int(x)+256)[3:] 
-        ruleFuck.append(xp)    
 
 
 
-def toBinary(ipAddress):
-    # Taken from https://stackoverflow.com/questions/3465099/ip-address-conversion-using-python
-    ip = str(ipAddress)
-    return ''.join([bin(256 + int(ip))[3:] for ip in '123.123.123.123'.split('.')])
 
 def validPacket(packet):
     validP = True
@@ -94,28 +204,20 @@ def handlePacket(packet):
     noRule = True
     # Compare against rules here
     for rule in RULES:       
-
+        print("RULENUM: " + str(rule['ruleNum']))
         if packet['direction'] != rule['direction']:
             canProcess = False
+
         if rule['ip'] == "*":
             pass
-        elif not compareIP(packet['ip'],rule['ip']):
+
+        elif not compareIP(rule['ip'],packet['ip']):
             canProcess = False
 
-        """
-        elif rule['ip'] != '*':
-            compareResult = compareIP(packet['ip'],rule['ip'])
-            boolean = compareResult[0]
-            packett = compareResult[1]
-            rulesss = compareResult[2]
-            if boolean == False:
-                print("CompareIP: " + str(rule['ruleNum']) + " " + str(rule['ip']) + " " + str(packet['ip']))
-                print("CompareIP: " + str(rule['ruleNum']) + "\n" + str(packett) + "\n" + str(rulesss))
-                canProcess = False
-               """ 
         if rule['ports'] == "*" or '*' in rule['ports']:
             pass
         elif packet['port'] not in rule['ports']:
+            print(str(rule['ruleNum']) + " " + str(packet['port']) + " " + str(rule['ports']))
             canProcess = False
         
         # can process if either both are the same or rule['established] == 0
