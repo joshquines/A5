@@ -6,45 +6,6 @@ import math
 # Array to store rules as dictionaries
 RULES = []
 
-def compareIPold(packetIP, ruleIP, num):
-    #print("ENTERED COMPARE IP " + str(num))
-    # Convert to octet
-    pktIP = []
-    #ruleIP = []
-
-    # Get ranges
-    #pIP = packetIP.split(".")
-    #rIP = ruleIP.split(".")    
-    pRange = packetIP.split(".")[3]
-    rRange = ruleIP.split(".")[3] 
-    pRange = pRange.split("/")[0]
-    rRange = rRange.split("/")[0] 
-
-    # Range to Octet
-    if pRange[0] != pRange[-1]:
-        pMask = binaryMask(pRange[0])
-    else:
-        pMask = [255,255,255,255]
-    pktIP = packetIP.split("/")[0]
-    pkt = pktIP, pMask
-
-    if rRange[0] != rRange[-1]:
-        rMask = binaryMask(rRange[0])
-    else:
-        rMask = [255,255,255,255]   
-    ruleIP = ruleIP.split("/")[0] 
-    rule = ruleIP, rMask 
-
-
-    # Compare ip,mask 
-    if pkt == rule:
-        #print("TRUE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
-        return True
-    else:
-        #print("FALSE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
-        return False
-
-
 def ipMask(ipAddress):
 
     # If / is in ipAddress, it's a rule
@@ -74,7 +35,7 @@ def ipMask(ipAddress):
         return ipFinal
 
 # Get the ruleMask
-def toOctet(range):
+def toOctet2(range):
     ruleMask = []
     ipRange = int(range)
 
@@ -99,6 +60,33 @@ def toOctet(range):
             ruleMask.append(0)
     return ruleMask
 
+# Get the ruleMask
+def toOctet(range):
+    ruleMask = []
+    ipRange = int(range)
+
+    # Get octets from range
+    while ipRange > 0:
+        # Get remainder
+        if ipRange < 8:
+            remainder = abs(ipRange)
+            finalOctet = 0
+            while remainder >= 0:
+                finalOctet = finalOctet + math.pow(2, 8 - remainder)
+                remainder = remainder - 1
+            ruleMask.append(finalOctet)
+            break
+        else:
+            # Full
+            ruleMask.append(255)
+            ipRange = ipRange - 8
+
+    # If got less than 4 octets, append 0s
+    if len(ruleMask) < 4:
+        while len(ruleMask) < 4:
+            ruleMask.append(0)
+    return ruleMask
+
 
 def compareIP(rIP, pIP):
     
@@ -109,11 +97,8 @@ def compareIP(rIP, pIP):
     ruleIP = rules[0]
     ruleMask = rules[1]
     packetIP = packets
-    #print("RULE IP: " + str(ruleIP))
-    #print("PCKT IP: " + str(packetIP))
-    #print("MASK: " + str(ruleMask))
 
-    # Convert to Binary to AND
+    # Convert to Binary to AND the mask
     binRIP = []
     for x in ruleIP:
         binRIP.append(format(int(x), '08b'))
@@ -126,19 +111,11 @@ def compareIP(rIP, pIP):
     for x in ruleMask:
         binMask.append(format(int(x), '08b'))
 
-    # Compare with lists
-    #checkPacket = []
-    #checkRules = []
-    #print(binRIP)
     binRIP = ''.join(binRIP)
     binPIP = ''.join(binPIP)
     binMask = ''.join(binMask)
-
     checkPacket = []
     checkRules = []
-    #print(binRIP)
-    #print(binPIP)
-    #print(binMask)
 
     # AND the packetIP with the ruleMask, ruleIP with ruleMask
     for i in range(0, len(binPIP) - 1):
@@ -149,9 +126,6 @@ def compareIP(rIP, pIP):
         return True
     else:
         return False
-
-
-
 
 def validPacket(packet):
     validP = True
@@ -210,46 +184,27 @@ def handlePacket(packet):
 
         if rule['ip'] == "*":
             pass
-
+    
         elif not compareIP(rule['ip'],packet['ip']):
+            print("NOPEEEEE")
             canProcess = False
 
         if rule['ports'] == "*" or '*' in rule['ports']:
             pass
         elif packet['port'] not in rule['ports']:
-            print(str(rule['ruleNum']) + " " + str(packet['port']) + " " + str(rule['ports']))
+            print(packet['port'])
+            print(rule['ports'])
             canProcess = False
         
         # can process if either both are the same or rule['established] == 0
         if packet['flag'] != rule['flag'] and rule['flag'] != 0:
             canProcess = False
+            print("RULENUM FAIL: " + str(rule['ruleNum']))
 
             
         if canProcess == True:
-            debugMessage = "\n".join([
-                "RULENUM: " + str(rule['ruleNum']),
-                "rAction: " + str(rule['action']),
-                "----------------------------------",
-                "pDir: " + str(packet['direction']),
-                "rDir: " + str(rule['direction']),
-                "----------------------------------",
-                "pIP: " + str(packet['ip']),
-                "rIP: " + str(rule['ip']),
-                "----------------------------------",
-                "pPort: " + str(packet['port']),
-                "rPort: " + str(rule['ports']),
-                "----------------------------------",
-                "pFlag: " + str(packet['flag']),
-                "rFlag: " + str(rule['flag']),
-                "----------------------------------"
-                ])
-            #print(debugMessage)
+            print("RULENUM PASS: " + str(rule['ruleNum']))
             output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
-            
-            # Compare the checks from compareIP()
-            #print("Packet check: " + str(packett))
-            #rint("Packet check: " + str(rulesss))
-
             print(output)
             # A rule has been matched
             noRule = False
@@ -260,28 +215,10 @@ def handlePacket(packet):
 
 
     # If no rule can be found default action is drop()
-    debugMessage = "\n".join([
-        "RULENUM: " + str(rule['ruleNum']),
-        "rAction: " + str(rule['action']),
-        "----------------------------------",
-        "pDir: " + str(packet['direction']),
-        "rDir: " + str(rule['direction']),
-        "----------------------------------",
-        "pIP: " + str(packet['ip']),
-        "rIP: " + str(rule['ip']),
-        "----------------------------------",
-        "pPort: " + str(packet['port']),
-        "rPort: " + str(rule['ports']),
-        "----------------------------------",
-        "pFlag: " + str(packet['flag']),
-        "rFlag: " + str(rule['flag']),
-        "----------------------------------"
-        ])
+
     if noRule:
         output = "drop() " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
         print(output)
-        #print(debugMessage)
-
     return
 
 def validRule(rule, count):
@@ -414,7 +351,8 @@ if __name__ == "__main__":
         for line in sys.stdin:
             # validate packet
             validator = validPacket(line)
-
+            if packetCounter == 3:
+                break
             if validator == True:
                 # put packet into a dictionary
                 pContent = line.split()
@@ -431,7 +369,7 @@ if __name__ == "__main__":
                 }
 
                 # check with rules list
-                print("\n\n" + str(packetCounter) + ": ", end ="")
+                print(str(packetCounter) + ": ", end ="")
                 packetCounter = packetCounter + 1
                 handlePacket(packet)
             else:
