@@ -7,12 +7,36 @@ import math
 RULES = []
 
 def compareIP(rIP, pIP):
+    """
     ruleIP = toBinary(rIP)
     packetIP = toBinary(pIP)
     if ruleIP == packetIP:
         return True
     else:
         return False
+    """
+
+    # CURRENTLY TESTING THIS SHIT IN PYTHON LIVE
+    ip = '136.159.255.0'
+    octets = ip.split(".")
+    fuck = []
+    ruleFuck = []
+    for x in octets:
+        print(x)
+        xp = bin(int(x)+256)[3:] 
+        fuck.append(xp)
+        
+    ruleIP = '136.159.5.5/16'
+    ruleOctets = ruleIP.split("/")[0]
+    ipRange = ruleIP.split("/")[1]
+    ruleOctets = ruleOctets.split(".")
+
+    for x in ruleOctets:
+        print(x)
+        xp = bin(int(x)+256)[3:] 
+        ruleFuck.append(xp)    
+
+
 
 def toBinary(ipAddress):
     # Taken from https://stackoverflow.com/questions/3465099/ip-address-conversion-using-python
