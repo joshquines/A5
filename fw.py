@@ -1,3 +1,8 @@
+"""
+CPSC 526 Assignment #5
+Steven Leong 10129668 T01
+Josh Quines 10138118 T03
+"""
 import sys
 import os
 import traceback
@@ -90,10 +95,8 @@ def toOctet(range):
 
 def compareIP(rIP, pIP):
     
-    # Get IPs and Masks
-
+    # Get IPs and Mask
     rules = ipMask(rIP)
-    #print(rules) #DEBUG
     packets = ipMask(pIP)
     ruleIP = rules[0]
     ruleMask = rules[1]
@@ -179,7 +182,6 @@ def handlePacket(packet):
     noRule = True
     # Compare against rules here
     for rule in RULES:       
-        #print("RULENUM: " + str(rule['ruleNum'])) # DEBUG
         if packet['direction'] != rule['direction']:
             canProcess = False
 
@@ -187,24 +189,18 @@ def handlePacket(packet):
             pass
     
         elif not compareIP(rule['ip'],packet['ip']):
-            #print("NOPEEEEE") # DEBUG
             canProcess = False
 
         if rule['ports'] == "*" or '*' in rule['ports']:
             pass
         elif packet['port'] not in rule['ports']:
-            #print(packet['port']) # DEBUG
-            #print(rule['ports'])
             canProcess = False
         
         # can process if either both are the same or rule['established] == 0
         if packet['flag'] != rule['flag'] and rule['flag'] != 0:
             canProcess = False
-            #print("RULENUM FAIL: " + str(rule['ruleNum'])) # DEBUG
-
             
         if canProcess == True:
-            #print("RULENUM PASS: " + str(rule['ruleNum'])) # DEBUG
             output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
             print(output)
             # A rule has been matched
