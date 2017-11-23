@@ -44,40 +44,96 @@ def compareIPold(packetIP, ruleIP, num):
         #print("FALSE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
         return False
 
-def binaryMaskold(mask):
 
-    octetMask = []
+def ipMask(ipAddress):
+    #print(ipAddress)
+    # Get octets
+    ipFinal = []
+    ip = ipAddress.split("/")[0]
+    #print("IP BITCH")
+    ip = ip.split(".")
+    ipRange = ipAddress.split(".")[3].split("/")
+    #print("IPRANGE" + str(ipRange))
 
-    # Get Octets
-    mask = int(mask)
-    while mask > 0:
-        mask = mask - 8
-        if mask <= 0:
-            finalOctet = abs(mask)
+    for octets in ip:
+        ipFinal.append(octets) 
+
+    # Get range octets
+    x = ipRange[-1]
+    #print("IPRANGE" + str(x))
+    #ipMask = toOctet(x)
+    
+    if ipRange[-1] != ipRange[0]:
+        ipMask = toOctet(ipRange[-1])
+    else:
+        ipMask = [255,255,255,255]
+
+
+    return [ipFinal, ipMask]
+
+def toOctet(range):
+    finalMask = []
+    rangeMask = int(range)
+
+    # Get octets from range
+    while rangeMask > 0:
+        rangeMask = rangeMask - 8
+        if rangeMask <= 0:
+            finalOctet = abs(rangeMask)
             lastMask = 0
             while finalOctet >= 0:
                 lastMask = lastMask + math.pow(2, 8 - finalOctet)
                 finalOctet = finalOctet - 1
-            octetMask.append(lastMask)
+            finalMask.append(lastMask)
         else:
-            # 255
-            octetMask.append(255)
-    return octetMask
+            finalMask.append(255)
+
+    # If got less than 4 octets, append 0s
+    if len(finalMask) < 4:
+        while len(finalMask) < 4:
+            finalMask.append(0)
+    return finalMask
+
+
+    # Range to Octet
+    if pRange[0] != pRange[-1]:
+        pMask = binaryMask(pRange[0])
+    else:
+        pMask = [255,255,255,255]
+    pktIP = packetIP.split("/")[0]
+    pkt = pktIP, pMask
+
+    if rRange[0] != rRange[-1]:
+        rMask = binaryMask(rRange[0])
+    else:
+        rMask = [255,255,255,255]   
+    ruleIP = ruleIP.split("/")[0] 
 
 def compareIP(rIP, pIP):
-    # 
-    ruleIP = toOctet(rIP)
+    
+    # Get IPs and Masks
 
-def toOctet(ipAddress):
-    octetMask = []
+    rules = ipMask(rIP)
+    packets = ipMask(pIP)
+    ruleIP = rules[0]
+    ruleMask = rules[1]
+    packetIP = packets[0]
+    packetMask = packets[1]
 
-    # Get octets
-    ip = ipAddress.split(".")
+    # Compare with lists
+    checkPacket = []
+    checkRules = []
 
-def binaryMask(mask):
-    pass
+    for i in range(0, len(ruleIP)):
+        checkPacket.append(int(packetIP[i]) & int(ruleMask[i]))
+        checkRules.append(int(ruleIP[i]) & int(ruleMask[i]))
 
-
+    if checkPacket == checkRules:
+        #print(str(checkPacket) + " " + str(checkRules))
+        return True, str(checkPacket), str(checkRules)
+    else:
+        #print(str(checkPacket) + " " + str(checkRules))
+        return False, str(checkPacket), str(checkRules)
 
 
 def validPacket(packet):
@@ -125,21 +181,30 @@ def flagCheck(packet, rule):
     
 def handlePacket(packet):
 
-    # can the packet to processed
+    # can the packet to proces sed
     canProcess = True
     # there is currently no rule that can apply to the packet
     noRule = True
     # Compare against rules here
     for rule in RULES:
-        
+        x = packet['ip']
+        y = rule['ip']        
         if packet['direction'] != rule['direction']:
             canProcess = False
 
         if rule['ip'] == "*":
             pass
-        elif not compareIP(packet['ip'], rule['ip'], rule['ruleNum']):
-            canProcess = False
-        
+
+        #elif not compareIP(x,y):
+        #    canProcess = False
+        else:
+            compareResult = compareIP(x,y)
+            boolean = compareResult[0]
+            packett = compareResult[1]
+            rulesss = compareResult[2]
+            if boolean == False:
+                canProcess = False
+
         if rule['ports'] == "*" or '*' in rule['ports']:
             pass
         elif packet['port'] not in rule['ports']:
@@ -148,15 +213,32 @@ def handlePacket(packet):
         # can process if either both are the same or rule['established] == 0
         if packet['flag'] != rule['flag'] and rule['flag'] != 0:
             canProcess = False
-        
-
-
-        
 
             
         if canProcess == True:
+            debugMessage = "\n".join([
+                "rAction: " + str(rule['action']),
+                "----------------------------------",
+                "pDir: " + str(packet['direction']),
+                "rDir: " + str(rule['direction']),
+                "----------------------------------",
+                "pIP: " + str(packet['ip']),
+                "rIP: " + str(rule['ip']),
+                "----------------------------------",
+                "pPort: " + str(packet['port']),
+                "rPort: " + str(rule['ports']),
+                "----------------------------------",
+                "pFlag: " + str(packet['flag']),
+                "rFlag: " + str(rule['flag']),
+                "----------------------------------"
+                ])
+            #print(debugMessage)
             output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
             
+            # Compare the checks from compareIP()
+            #print("Packet check: " + str(packett))
+            #rint("Packet check: " + str(rulesss))
+
             print(output)
             # A rule has been matched
             noRule = False
