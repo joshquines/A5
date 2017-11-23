@@ -6,7 +6,8 @@ import math
 # Array to store rules as dictionaries
 RULES = []
 
-def compareIP(packetIP, ruleIP):
+def compareIP(packetIP, ruleIP, num):
+    #print("ENTERED COMPARE IP " + str(num))
     # Convert to octet
     pktIP = []
     #ruleIP = []
@@ -16,24 +17,31 @@ def compareIP(packetIP, ruleIP):
     #rIP = ruleIP.split(".")    
     pRange = packetIP.split(".")[3]
     rRange = ruleIP.split(".")[3] 
+    pRange = pRange.split("/")[0]
+    rRange = rRange.split("/")[0] 
 
     # Range to Octet
     if pRange[0] != pRange[-1]:
         pMask = binaryMask(pRange[0])
     else:
         pMask = [255,255,255,255]
+    pktIP = packetIP.split("/")[0]
     pkt = pktIP, pMask
 
     if rRange[0] != rRange[-1]:
         rMask = binaryMask(rRange[0])
     else:
-        rMask = [255,255,255,255]    
+        rMask = [255,255,255,255]   
+    ruleIP = ruleIP.split("/")[0] 
     rule = ruleIP, rMask 
+
 
     # Compare ip,mask 
     if pkt == rule:
+        #print("TRUE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
         return True
     else:
+        #print("FALSE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
         return False
 
 def binaryMask(mask):
@@ -91,6 +99,14 @@ def validPacket(packet):
         validP = False
 
     return validP
+
+def flagCheck(packet, rule):
+    if rule == 0:
+        return True
+    elif rule == 1 and packet == 1:
+        return True 
+    elif rule == 1 and packet == 0:
+        return False
     
     
 def handlePacket(packet):
@@ -107,10 +123,10 @@ def handlePacket(packet):
 
         if rule['ip'] == "*":
             pass
-        elif not compareIP(packet['ip'], rule['ip']):
+        elif not compareIP(packet['ip'], rule['ip'], rule['ruleNum']):
             canProcess = False
         
-        if rule['ports'] == "*":
+        if rule['ports'] == "*" or '*' in rule['ports']:
             pass
         elif packet['port'] not in rule['ports']:
             canProcess = False
@@ -118,9 +134,15 @@ def handlePacket(packet):
         # can process if either both are the same or rule['established] == 0
         if packet['flag'] != rule['flag'] and rule['flag'] != 0:
             canProcess = False
+        
+
+
+        
+
             
         if canProcess == True:
             output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
+            
             print(output)
             # A rule has been matched
             noRule = False
@@ -129,10 +151,28 @@ def handlePacket(packet):
             # reset canProcess flag for next rule
             canProcess = True
 
+
     # If no rule can be found default action is drop()
+    debugMessage = "\n".join([
+        "rAction: " + str(rule['action']),
+        "----------------------------------",
+        "pDir: " + str(packet['direction']),
+        "rDir: " + str(rule['direction']),
+        "----------------------------------",
+        "pIP: " + str(packet['ip']),
+        "rIP: " + str(rule['ip']),
+        "----------------------------------",
+        "pPort: " + str(packet['port']),
+        "rPort: " + str(rule['ports']),
+        "----------------------------------",
+        "pFlag: " + str(packet['flag']),
+        "rFlag: " + str(rule['flag']),
+        "----------------------------------"
+        ])
     if noRule:
         output = "drop() " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
         print(output)
+        #print(debugMessage)
 
     return
 
@@ -262,6 +302,7 @@ if __name__ == "__main__":
             print("Error: Unable to process rules from configuration file")
             sys.exit()
 
+        packetCounter = 1
         for line in sys.stdin:
             # validate packet
             validator = validPacket(line)
@@ -282,6 +323,8 @@ if __name__ == "__main__":
                 }
 
                 # check with rules list
+                print(str(packetCounter) + ": ", end ="")
+                packetCounter = packetCounter + 1
                 handlePacket(packet)
             else:
                 print("Error: Packet could not be processed")
