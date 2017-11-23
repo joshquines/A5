@@ -6,6 +6,138 @@ import math
 # Array to store rules as dictionaries
 RULES = []
 
+def compareIPold(packetIP, ruleIP, num):
+    #print("ENTERED COMPARE IP " + str(num))
+    # Convert to octet
+    pktIP = []
+    #ruleIP = []
+
+    # Get ranges
+    #pIP = packetIP.split(".")
+    #rIP = ruleIP.split(".")    
+    pRange = packetIP.split(".")[3]
+    rRange = ruleIP.split(".")[3] 
+    pRange = pRange.split("/")[0]
+    rRange = rRange.split("/")[0] 
+
+    # Range to Octet
+    if pRange[0] != pRange[-1]:
+        pMask = binaryMask(pRange[0])
+    else:
+        pMask = [255,255,255,255]
+    pktIP = packetIP.split("/")[0]
+    pkt = pktIP, pMask
+
+    if rRange[0] != rRange[-1]:
+        rMask = binaryMask(rRange[0])
+    else:
+        rMask = [255,255,255,255]   
+    ruleIP = ruleIP.split("/")[0] 
+    rule = ruleIP, rMask 
+
+
+    # Compare ip,mask 
+    if pkt == rule:
+        #print("TRUE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
+        return True
+    else:
+        #print("FALSE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
+        return False
+
+
+def ipMask(ipAddress):
+    #print(ipAddress)
+    # Get octets
+    ipFinal = []
+    ip = ipAddress.split("/")[0]
+    #print("IP BITCH")
+    ip = ip.split(".")
+    ipRange = ipAddress.split(".")[3].split("/")
+    #print("IPRANGE" + str(ipRange))
+
+    for octets in ip:
+        ipFinal.append(octets) 
+
+    # Get range octets
+    x = ipRange[-1]
+    #print("IPRANGE" + str(x))
+    #ipMask = toOctet(x)
+    
+    if ipRange[-1] != ipRange[0]:
+        ipMask = toOctet(ipRange[-1])
+    else:
+        ipMask = [255,255,255,255]
+
+
+    return [ipFinal, ipMask]
+
+def toOctet(range):
+    finalMask = []
+    rangeMask = int(range)
+
+    # Get octets from range
+    while rangeMask > 0:
+        rangeMask = rangeMask - 8
+        if rangeMask <= 0:
+            finalOctet = abs(rangeMask)
+
+            lastMask = 0
+            while finalOctet >= 0:
+                lastMask = lastMask + math.pow(2, 8 - finalOctet)
+                finalOctet = finalOctet - 1
+            finalMask.append(lastMask)
+        else:
+            finalMask.append(255)
+
+
+    # If got less than 4 octets, append 0s
+    if len(finalMask) < 4:
+        while len(finalMask) < 4:
+            finalMask.append(0)
+    return finalMask
+
+
+    # Range to Octet
+    if pRange[0] != pRange[-1]:
+        pMask = binaryMask(pRange[0])
+    else:
+        pMask = [255,255,255,255]
+    pktIP = packetIP.split("/")[0]
+    pkt = pktIP, pMask
+
+    if rRange[0] != rRange[-1]:
+        rMask = binaryMask(rRange[0])
+    else:
+        rMask = [255,255,255,255]   
+    ruleIP = ruleIP.split("/")[0] 
+
+
+def compareIPfuck(rIP, pIP):
+    
+    # Get IPs and Masks
+
+    rules = ipMask(rIP)
+    packets = ipMask(pIP)
+    ruleIP = rules[0]
+    ruleMask = rules[1]
+    packetIP = packets[0]
+    packetMask = packets[1]
+
+    # Compare with lists
+    checkPacket = []
+    checkRules = []
+
+    for i in range(0, len(ruleIP)):
+        checkPacket.append(int(packetIP[i]) & int(ruleMask[i]))
+        checkRules.append(int(ruleIP[i]) & int(ruleMask[i]))
+
+    if checkPacket == checkRules:
+        #print(str(checkPacket) + " " + str(checkRules))
+        return True, str(checkPacket), str(checkRules)
+    else:
+        #print(str(checkPacket) + " " + str(checkRules))
+        return False, str(checkPacket), str(checkRules)
+
 def compareIP(rIP, pIP):
     ruleIP = toBinary(rIP)
     packetIP = toBinary(pIP)
@@ -70,11 +202,13 @@ def handlePacket(packet):
     noRule = True
     # Compare against rules here
     for rule in RULES:       
-
+        print("RULENUM: " + str(rule['ruleNum']))
         if packet['direction'] != rule['direction']:
             canProcess = False
+
         if rule['ip'] == "*":
             pass
+
         elif not compareIP(packet['ip'],rule['ip']):
             canProcess = False
 
@@ -92,6 +226,7 @@ def handlePacket(packet):
         if rule['ports'] == "*" or '*' in rule['ports']:
             pass
         elif packet['port'] not in rule['ports']:
+            print(str(rule['ruleNum']) + " " + str(packet['port']) + " " + str(rule['ports']))
             canProcess = False
         
         # can process if either both are the same or rule['established] == 0
