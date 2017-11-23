@@ -39,31 +39,6 @@ def ipMask(ipAddress):
             ipFinal.append(octets)
         return ipFinal
 
-# Get the ruleMask
-def toOctet2(range):
-    ruleMask = []
-    ipRange = int(range)
-
-    # Get octets from range
-    while ipRange > 0:
-        # Get remainder
-        if ipRange < 0:
-            remainder = abs(ipRange)
-            finalOctet = 0
-            while remainder >= 0:
-                finalOctet = finalOctet + math.pow(2, 8 - remainder)
-                remainder = remainder - 1
-            ruleMask.append(finalOctet)
-        else:
-            # Full
-            ruleMask.append(255)
-            ipRange = ipRange - 8
-
-    # If got less than 4 octets, append 0s
-    if len(ruleMask) < 4:
-        while len(ruleMask) < 4:
-            ruleMask.append(0)
-    return ruleMask
 
 # Get the ruleMask
 def toOctet(range):
@@ -131,6 +106,7 @@ def compareIP(rIP, pIP):
     else:
         return False
 
+
 def validPacket(packet):
     validP = True
     packetContent = packet.split()
@@ -164,16 +140,8 @@ def validPacket(packet):
         validP = False
 
     return validP
+    
 
-def flagCheck(packet, rule):
-    if rule == 0:
-        return True
-    elif rule == 1 and packet == 1:
-        return True 
-    elif rule == 1 and packet == 0:
-        return False
-    
-    
 def handlePacket(packet):
 
     # can the packet to proces sed
@@ -210,13 +178,12 @@ def handlePacket(packet):
             # reset canProcess flag for next rule
             canProcess = True
 
-
     # If no rule can be found default action is drop()
-
     if noRule:
         output = "drop() " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
         print(output)
     return
+
 
 def validRule(rule, count):
     validR = True
@@ -296,7 +263,6 @@ def setRules(filename):
                     # if the rule is valid
                     if validRule(lineContent, count):
                         # turn it into a dictionary
-
                         #split contents
                         direction = str(lineContent[0])
                         action = str(lineContent[1])
@@ -338,22 +304,17 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 2:
         filename = sys.argv[1]
-
         # process configuration file
         if not setRules(filename):
             print("Error: Unable to process rules from configuration file")
             sys.exit()
 
-        packetCounter = 1
         for line in sys.stdin:
             # validate packet
             validator = validPacket(line)
-            #if packetCounter == 3:
-             #   break
             if validator == True:
                 # put packet into a dictionary
                 pContent = line.split()
-
                 pDirection = str(pContent[0])
                 pIP = str(pContent[1])
                 pPort = str(pContent[2])
@@ -366,13 +327,10 @@ if __name__ == "__main__":
                 }
 
                 # check with rules list
-                print(str(packetCounter) + ": ", end ="")
-                packetCounter = packetCounter + 1
                 handlePacket(packet)
             else:
                 print("Error: Packet could not be processed")
                 sys.exit()
-
     else:
         print("Error: Incorrect Number of Arguments")
         print("Usage: fw.py <configuration file>")
