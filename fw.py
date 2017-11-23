@@ -71,7 +71,7 @@ def toOctet(range):
         if ipRange < 8:
             remainder = abs(ipRange)
             finalOctet = 0
-            while remainder >= 0:
+            while remainder > 0:
                 finalOctet = finalOctet + math.pow(2, 8 - remainder)
                 remainder = remainder - 1
             ruleMask.append(finalOctet)
@@ -93,6 +93,7 @@ def compareIP(rIP, pIP):
     # Get IPs and Masks
 
     rules = ipMask(rIP)
+    #print(rules) #DEBUG
     packets = ipMask(pIP)
     ruleIP = rules[0]
     ruleMask = rules[1]
@@ -178,7 +179,7 @@ def handlePacket(packet):
     noRule = True
     # Compare against rules here
     for rule in RULES:       
-        print("RULENUM: " + str(rule['ruleNum']))
+        #print("RULENUM: " + str(rule['ruleNum'])) # DEBUG
         if packet['direction'] != rule['direction']:
             canProcess = False
 
@@ -186,24 +187,24 @@ def handlePacket(packet):
             pass
     
         elif not compareIP(rule['ip'],packet['ip']):
-            print("NOPEEEEE")
+            #print("NOPEEEEE") # DEBUG
             canProcess = False
 
         if rule['ports'] == "*" or '*' in rule['ports']:
             pass
         elif packet['port'] not in rule['ports']:
-            print(packet['port'])
-            print(rule['ports'])
+            #print(packet['port']) # DEBUG
+            #print(rule['ports'])
             canProcess = False
         
         # can process if either both are the same or rule['established] == 0
         if packet['flag'] != rule['flag'] and rule['flag'] != 0:
             canProcess = False
-            print("RULENUM FAIL: " + str(rule['ruleNum']))
+            #print("RULENUM FAIL: " + str(rule['ruleNum'])) # DEBUG
 
             
         if canProcess == True:
-            print("RULENUM PASS: " + str(rule['ruleNum']))
+            #print("RULENUM PASS: " + str(rule['ruleNum'])) # DEBUG
             output = rule['action'] + "(" + str(rule['ruleNum']) + ") " + packet['direction'] + " " + packet['ip'] + " " + packet['port'] + " " + str(packet['flag'])
             print(output)
             # A rule has been matched
@@ -351,8 +352,8 @@ if __name__ == "__main__":
         for line in sys.stdin:
             # validate packet
             validator = validPacket(line)
-            if packetCounter == 3:
-                break
+            #if packetCounter == 3:
+             #   break
             if validator == True:
                 # put packet into a dictionary
                 pContent = line.split()
