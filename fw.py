@@ -6,7 +6,7 @@ import math
 # Array to store rules as dictionaries
 RULES = []
 
-def compareIP(packetIP, ruleIP, num):
+def compareIPold(packetIP, ruleIP, num):
     #print("ENTERED COMPARE IP " + str(num))
     # Convert to octet
     pktIP = []
@@ -44,7 +44,7 @@ def compareIP(packetIP, ruleIP, num):
         #print("FALSE: ruleIP: " + str(rule) + " packetIP: " + str(pkt))
         return False
 
-def binaryMask(mask):
+def binaryMaskold(mask):
 
     octetMask = []
 
@@ -63,6 +63,20 @@ def binaryMask(mask):
             # 255
             octetMask.append(255)
     return octetMask
+
+def compareIP(rIP, pIP):
+    # 
+    ruleIP = toOctet(rIP)
+
+def toOctet(ipAddress):
+    octetMask = []
+
+    # Get octets
+    ip = ipAddress.split(".")
+
+def binaryMask(mask):
+    pass
+
 
 
 
